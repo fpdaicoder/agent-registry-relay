@@ -1,0 +1,1 @@
+"""Deployment-template regression tests."""

@@ -1,0 +1,25 @@
+[Unit]
+Description=Agent Registry Binary Stream Proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agent-registry
+Group=agent-registry
+WorkingDirectory=/opt/agent-registry
+EnvironmentFile=/etc/agent-registry/stream-proxy.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/agent-registry/.venv/bin/agent-stream-proxy
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

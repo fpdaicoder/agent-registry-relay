@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-registry-relay"
+dynamic = ["version"]
+description = "Agent service registry with optional relay, tunnel, artifact, and stream data planes."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "Agent Registry maintainers" }]
+keywords = ["registry", "agent", "relay", "a2a", "fastapi"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Framework :: FastAPI",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "requests>=2.28",
+    "httpx>=0.24",                   # cluster inter-node sync + CLI client
+    "fastapi>=0.104",
+    "pydantic>=2.0",
+    "python-multipart>=0.0.6",
+    "uvicorn[standard]>=0.24",       # bundles websockets
+]
+
+[project.optional-dependencies]
+dev = ["build>=1.0", "twine>=5.0", "pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/kwistzzqq-byte/agent-registry-relay"
+Issues = "https://github.com/kwistzzqq-byte/agent-registry-relay/issues"
+Documentation = "https://github.com/kwistzzqq-byte/agent-registry-relay#readme"
+
+[project.scripts]
+agent-registry = "a2x_registry.backend.__main__:main"
+agent-register = "a2x_registry.register.__main__:main"
+agent-stream-proxy = "a2x_registry.stream_proxy.__main__:main"
+# Compatibility aliases retained for existing deployments.
+a2x-registry = "a2x_registry.backend.__main__:main"
+a2x-register = "a2x_registry.register.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "a2x_registry.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["a2x_registry*"]
+# auth_data is a runtime directory created on first ``agent-registry auth
+# init`` — never package it into the wheel. ``packages.find`` is for code
+# packages anyway; this is belt-and-suspenders against an accidental ``pip
+# install .`` from a dev tree where the dir already exists.
+exclude = [
+    "reference*", "examples*", "tests*", "database*", "client*", "backup*",
+    "a2x_registry.auth.auth_data*",
+]
