@@ -1,5 +1,6 @@
 """Release-scope guardrails for the standalone registry/relay repository."""
 
+import re
 from pathlib import Path
 
 
@@ -69,3 +70,33 @@ def test_package_metadata_has_no_search_or_evaluation_entry_points():
 
     leaked = [value for value in forbidden if value in metadata]
     assert leaked == [], f"out-of-scope package metadata remains: {leaked}"
+
+
+def test_readme_documents_only_supported_relay_routes():
+    from a2x_registry.relay.router import router
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    relay_section = readme.split("## Relay", 1)[1].split("### WebSocket Tunnel", 1)[0]
+    documented = {
+        (method, path)
+        for method, path in re.findall(r"`(GET|POST) ([^`]+)`", relay_section)
+    }
+    supported = {
+        (method, route.path)
+        for route in router.routes
+        for method in route.methods
+    }
+
+    assert documented == supported
+
+
+def test_readme_stream_proxy_variables_are_consumed_by_config():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    section = readme.split("### Stream Proxy", 1)[1].split("## ", 1)[0]
+    documented = set(re.findall(r"\bA2X_STREAM_PROXY_[A-Z0-9_]+\b", section))
+    config = (
+        ROOT / "a2x_registry" / "stream_proxy" / "config.py"
+    ).read_text(encoding="utf-8")
+
+    unknown = sorted(variable for variable in documented if variable not in config)
+    assert unknown == [], f"README documents unused Stream Proxy variables: {unknown}"

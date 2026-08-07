@@ -112,10 +112,10 @@ agent-registry --host 0.0.0.0
 
 生产环境应使用目标 allowlist，避免 `ALLOW_ALL_TARGETS=true`。主要接口：
 
-- `GET /a2a/{dataset}/{service_id}/.well-known/agent-card.json`
 - `POST /a2a/{dataset}/{service_id}`
-- `POST /a2a/{dataset}/{service_id}/v1/message:send`
-- `POST /a2a/{dataset}/{service_id}/v1/message:stream`
+- `GET /api/datasets/{dataset}/services/{service_id}/agent-card`（用 `route=direct|relay` 选择直连或 Relay Agent Card）
+
+A2A 方法由 POST 请求的 JSON body 表达，不使用 `/v1/message:send` 或 `/v1/message:stream` 路径后缀。
 
 ### WebSocket Tunnel
 
@@ -143,7 +143,6 @@ Artifact Relay 与 Registry 共用 HTTP 进程，但拥有独立 token、配额�
 ### Stream Proxy
 
 ```bash
-export A2X_STREAM_PROXY_ENABLED=true
 export A2X_STREAM_PROXY_CREATE_TOKEN='<generate-a-32+char-random-token>'
 export A2X_STREAM_PROXY_PUBLIC_WS_BASE_URL=wss://stream.registry.example.com
 agent-stream-proxy
