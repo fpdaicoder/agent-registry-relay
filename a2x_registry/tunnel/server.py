@@ -334,6 +334,23 @@ class WebSocketTunnelServer:
         device_id: str,
         data: dict[str, Any],
     ) -> tuple[set[tuple[str, str]], str]:
+        try:
+            return await self._prepare_bindings_inner(device_id, data)
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            # handle_connection deliberately returns an error frame without
+            # logging the reason, so record it here for diagnosis.
+            logger.warning(
+                "WebSocket tunnel binding failed for device %s: %s",
+                device_id,
+                exc,
+            )
+            raise
+
+    async def _prepare_bindings_inner(
+        self,
+        device_id: str,
+        data: dict[str, Any],
+    ) -> tuple[set[tuple[str, str]], str]:
         dataset = data.get("dataset")
         service_id = data.get("service_id")
         agent_card = data.get("agent_card")

@@ -312,6 +312,7 @@ class AuthStore:
         namespaces: Optional[List[str]],
         note: str = "",
         by: Optional[str] = None,
+        kind: str = "human",
     ) -> Tuple[Principal, str]:
         """Create a new principal + return its first API key plaintext.
 
@@ -344,6 +345,7 @@ class AuthStore:
                 created_at=_utcnow_iso(),
                 disabled_at=None,
                 note=note,
+                kind=kind,
             )
             self._principals[principal.id] = principal
             token = generate_token()
@@ -386,6 +388,7 @@ class AuthStore:
         role: Optional[str] = None,
         disabled: Optional[bool] = None,
         note: Optional[str] = None,
+        kind: Optional[str] = None,
         by: Optional[str] = None,
     ) -> Principal:
         """Partial update of a Principal's mutable fields.
@@ -408,6 +411,7 @@ class AuthStore:
             if new_role != "admin" and not isinstance(new_ns, list):
                 raise ValueError(f"{new_role} principal requires namespaces=list")
             new_note = principal.note if note is None else note
+            new_kind = principal.kind if kind is None else kind
             new_disabled_at = principal.disabled_at
             if disabled is True:
                 new_disabled_at = new_disabled_at or _utcnow_iso()
@@ -421,6 +425,7 @@ class AuthStore:
                 created_at=principal.created_at,
                 disabled_at=new_disabled_at,
                 note=new_note,
+                kind=new_kind,
             )
             self._principals[principal_id] = updated
             self._persist_principals()

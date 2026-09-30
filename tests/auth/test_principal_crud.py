@@ -146,3 +146,56 @@ def test_patch_principal_disable(auth_initialized_app, admin_headers, auth_datas
     # Now token is dead.
     r = client.get("/api/auth/whoami", headers=target_headers)
     assert r.status_code == 401
+
+
+def test_create_agent_principal_records_kind(
+    auth_initialized_app, admin_headers, auth_dataset
+):
+    client, _ = auth_initialized_app
+    r = client.post(
+        "/api/auth/principals",
+        json={"handle": "bot", "role": "user", "namespaces": [auth_dataset], "kind": "agent"},
+        headers=admin_headers,
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["kind"] == "agent"
+
+
+def test_principal_defaults_to_human_kind(auth_initialized_app, admin_headers, auth_dataset):
+    client, _ = auth_initialized_app
+    r = client.post(
+        "/api/auth/principals",
+        json={"handle": "person", "role": "user", "namespaces": [auth_dataset]},
+        headers=admin_headers,
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["kind"] == "human"
+
+
+def test_patch_kind_marks_an_existing_principal_as_agent(
+    auth_initialized_app, admin_headers, auth_dataset
+):
+    client, _ = auth_initialized_app
+    p = client.post(
+        "/api/auth/principals",
+        json={"handle": "upgrade_me", "role": "user", "namespaces": [auth_dataset]},
+        headers=admin_headers,
+    ).json()
+    assert p["kind"] == "human"
+    r = client.patch(
+        f"/api/auth/principals/{p['principal_id']}",
+        json={"kind": "agent"}, headers=admin_headers,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["kind"] == "agent"
+
+
+def test_invalid_kind_rejected(auth_initialized_app, admin_headers, auth_dataset):
+    client, _ = auth_initialized_app
+    r = client.post(
+        "/api/auth/principals",
+        json={"handle": "robot", "role": "user", "namespaces": [auth_dataset], "kind": "robot"},
+        headers=admin_headers,
+    )
+    assert r.status_code == 400
+    assert "kind" in r.text.lower()

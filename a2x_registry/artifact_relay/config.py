@@ -112,7 +112,15 @@ class ArtifactRelayConfig:
                 "A2X_ARTIFACT_RELAY_PUBLIC_BASE_URL must be an origin "
                 "without credentials, path, query, or fragment"
             )
-        if not self.storage_dir.is_absolute():
+        # Deployment templates target Linux; accept POSIX-shaped absolute
+        # paths so config validation also works on Windows dev machines.
+        # Windows Path() normalizes a leading "/" to "\", so check the
+        # drive-aware parts rather than the string form.
+        if not (
+            self.storage_dir.is_absolute()
+            or (not self.storage_dir.drive and self.storage_dir.parts[:1] == ("/",))
+            or (not self.storage_dir.drive and self.storage_dir.parts[:1] == ("\\",))
+        ):
             raise ValueError("A2X_ARTIFACT_RELAY_STORAGE_DIR must be absolute")
         if len(self.create_token) < 32:
             raise ValueError(

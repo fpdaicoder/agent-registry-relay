@@ -50,12 +50,14 @@ def test_public_urls_use_documentation_hosts() -> None:
 def test_deployment_templates_match_runtime_config() -> None:
     from a2x_registry.artifact_relay.config import ArtifactRelayConfig
     from a2x_registry.stream_proxy.config import StreamProxyConfig
+    from a2x_registry.tcp_tunnel.config import TcpTunnelConfig
     from a2x_registry.tunnel.config import TunnelConfig
 
     values = _environment_values(_deployment_text())
 
     assert ArtifactRelayConfig.from_env(values).enabled
     assert TunnelConfig.from_env(values).enabled
+    assert TcpTunnelConfig.from_env(values).enabled
     assert StreamProxyConfig.from_env(values).public_ws_base_url.startswith("wss://")
 
 

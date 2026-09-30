@@ -14,6 +14,7 @@
 | Registry API | `agent-registry`，HTTP `8000` | 服务注册、发现、鉴权、心跳、预约和集群控制面 |
 | A2A Relay | Registry 同进程，HTTP `8000` | 将 JSON/SSE 请求转发到已注册 A2A Agent |
 | WebSocket Tunnel | Registry 同进程，WS `8001` | 为无法被外部直连的端侧 Agent 提供反向通道 |
+| TCP Tunnel | Registry 同进程，TCP `8003` + 代理端口池 | 端侧反向 TCP 端口转发，桥接任意 TCP 服务 |
 | Artifact Relay | Registry 同进程，HTTP `8000` | 有界、可续传、带哈希校验的文件中转 |
 | Stream Proxy | `agent-stream-proxy`，WS `8002` | 独立的成对二进制流转发服务 |
 
@@ -128,6 +129,27 @@ agent-registry
 
 Tunnel 默认监听 `8001`。Relay 优先使用已绑定的 Tunnel 连接，否则回退到注册卡中的 HTTP 目标。
 
+### TCP Tunnel
+
+反向 TCP 端口转发（frp 风格）：端侧设备主动连出到 Registry 注册本地端口目标，Registry 在公网侧监听代理端口，客户端连上后 TCP 字节流被原样桥接到设备本地服务。可承载 SSH、数据库、gRPC 等任意 TCP 协议。
+
+```bash
+export A2X_TCP_TUNNEL_ENABLED=true
+export A2X_TCP_TUNNEL_SHARED_TOKEN='<generate-a-32+char-random-token>'
+agent-registry
+```
+
+控制/数据通道默认监听 `8003`，代理端口默认从 `10000-11000` 分配。协议为 JSON 行（`\n` 分隔）：
+
+1. 设备建立 TCP 连接，发送 `{"type":"register","device_id":"HW-PC1","token":"...","targets":[{"name":"ssh","local_host":"127.0.0.1","local_port":22,"public_port":0}]}`；
+2. `public_port=0` 时由端口池自动分配，`registered` 响应返回每个 target 的实际公网端口；显式指定时冲突会被拒绝；
+3. 客户端连上代理端口后，服务端向设备下发 `{"type":"open","conn_id":...}`；设备另建一条数据连接，首帧发 `{"type":"connect","conn_id":...}`，此后该连接为原始双向字节流；
+4. 任一侧断开即拆除整条桥接。
+
+register 同样支持可选的 `dataset`/`service_id`/`agent_card`（写入 Agent Card metadata 的 `tcpTunnelDeviceId`）和 `A2X_TCP_TUNNEL_AUTO_BIND_REGISTERED_SERVICES` 自动绑定，语义与 WebSocket Tunnel 一致。状态接口为 `GET /api/tcp-tunnel/status`。
+
+TCP Tunnel 转发的是明文字节流，`shared_token` 只保护注册面；生产环境应将 `8003` 与代理端口置于 TLS/wireguard 等加密通道之后，或仅在受信网络内开放。
+
 ### Artifact Relay
 
 ```bash
@@ -150,6 +172,27 @@ agent-stream-proxy
 
 Stream Proxy 必须单独启动；Registry 健康不代表 Stream Proxy 已运行。
 
+### Group Chat
+
+多 Agent 群聊：创建群、邀请成员、群内消息与增量同步。默认关闭；启用需要
+PostgreSQL（`psycopg[binary,pool]` 是可选依赖）：
+
+```bash
+export A2X_GROUPCHAT_ENABLED=true
+export A2X_GROUPCHAT_BACKEND=postgres
+export A2X_GROUPCHAT_DSN='postgresql://registry:…@127.0.0.1:5432/registry'
+agent-registry
+```
+
+首次启动会自动创建 `gc_*` 表。`A2X_GROUPCHAT_BACKEND=memory` 可用于单进程冒烟测试，
+但不持久化，不要用于部署。
+
+群内每条消息都带服务端派生的 `trusted=false`：群消息是其他 principal 写入的数据，
+接收方 Agent 不应把它当作指令执行。
+
+接口边界与完整设计见 [`docs/groupchat_design.md`](docs/groupchat_design.md)，
+环境变量模板见 [`deploy/agentregistry-groupchat.env.example`](deploy/agentregistry-groupchat.env.example)。
+
 ## 部署与安全
 
 可共享的 systemd/environment 模板位于 [`deploy/`](deploy/README.md)。示例只使用 `example.com`、通用服务账号和占位 token。
@@ -159,7 +202,8 @@ Stream Proxy 必须单独启动；Registry 健康不代表 Stream Proxy 已运�
 - TLS 终止于可信反向代理或服务本身；
 - token 通过环境注入或 Secret Manager 提供；
 - Relay 配置目标 allowlist；
-- Artifact Relay 和 Stream Proxy 设置独立高熵 token；
+- Artifact Relay、Stream Proxy 和 TCP Tunnel 设置独立高熵 token；
+- TCP Tunnel 代理端口范围仅在需要的网络边界开放，敏感流量套 TLS/wireguard 等加密通道；
 - 持久化目录权限限制为服务账号可读写；
 - 不提交 `.env`、SSH key、API key、真实主机/IP 或个人绝对路径。
 
@@ -183,6 +227,7 @@ uv run python -m pytest -q tests/deploy/test_repository_scope.py
 - [`docs/auth_design.md`](docs/auth_design.md)：鉴权和 namespace 权限
 - [`docs/heartbeat_design.md`](docs/heartbeat_design.md)：心跳与健康状态
 - [`docs/cluster_design.md`](docs/cluster_design.md)：多节点同步
+- [`docs/groupchat_design.md`](docs/groupchat_design.md)：多 Agent 群聊设计提案（未实现）
 - [`README_forDistributed.md`](README_forDistributed.md)：分布式部署步骤
 
 许可证：Apache-2.0。

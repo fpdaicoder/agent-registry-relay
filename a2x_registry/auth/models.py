@@ -18,6 +18,10 @@ Role = str  # one of: "admin" | "provider" | "user"
 
 VALID_ROLES = ("admin", "provider", "user")
 
+# Whether a principal is a human user or an Agent. Group chat uses this to
+# decide what a plain member may invite: only an Agent, never another human.
+VALID_KINDS = ("human", "agent")
+
 
 class Principal(BaseModel):
     """A registered identity that may hold one or more API keys.
@@ -36,12 +40,20 @@ class Principal(BaseModel):
     created_at: str       # ISO 8601 UTC, e.g. "2026-04-28T10:00:00Z"
     disabled_at: Optional[str] = None
     note: str = ""
+    kind: str = "human"   # "human" | "agent"
 
     @field_validator("role")
     @classmethod
     def _check_role(cls, v: str) -> str:
         if v not in VALID_ROLES:
             raise ValueError(f"role must be one of {VALID_ROLES}, got {v!r}")
+        return v
+
+    @field_validator("kind")
+    @classmethod
+    def _check_kind(cls, v: str) -> str:
+        if v not in VALID_KINDS:
+            raise ValueError(f"kind must be one of {VALID_KINDS}, got {v!r}")
         return v
 
     @field_validator("namespaces")

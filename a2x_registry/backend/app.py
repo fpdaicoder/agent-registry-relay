@@ -16,10 +16,17 @@ from a2x_registry.relay.router import router as relay_router
 from a2x_registry.relay.deps import startup_relay, shutdown_relay
 from a2x_registry.tunnel.router import router as tunnel_router
 from a2x_registry.tunnel.deps import startup_tunnel, shutdown_tunnel
+from a2x_registry.tcp_tunnel.router import router as tcp_tunnel_router
+from a2x_registry.tcp_tunnel.deps import startup_tcp_tunnel, shutdown_tcp_tunnel
 from a2x_registry.artifact_relay.router import router as artifact_relay_router
 from a2x_registry.artifact_relay.deps import (
     startup_artifact_relay,
     shutdown_artifact_relay,
+)
+from a2x_registry.groupchat.router import router as groupchat_router
+from a2x_registry.groupchat.deps import (
+    startup_groupchat,
+    shutdown_groupchat,
 )
 
 
@@ -29,12 +36,16 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     startup_registry()
     await startup_relay()
     await startup_tunnel()
+    await startup_tcp_tunnel()
     await startup_artifact_relay()
+    await startup_groupchat()
 
     try:
         yield
     finally:
+        await shutdown_groupchat()
         await shutdown_artifact_relay()
+        await shutdown_tcp_tunnel()
         await shutdown_tunnel()
         await shutdown_relay()
         shutdown_registry()
@@ -71,6 +82,13 @@ app.include_router(relay_router)
 # Optional WebSocket tunnel. It uses its own listener (8001 by default) but
 # shares this process and systemd lifecycle with the registry.
 app.include_router(tunnel_router)
+# Optional reverse TCP tunnel (port forwarding for arbitrary TCP services).
+# Its control/data listener defaults to 8003 and proxy ports come from a
+# configurable range; same process and systemd lifecycle as the registry.
+app.include_router(tcp_tunnel_router)
 # Optional store-and-forward artifact relay. Payload bytes use this bounded,
 # resumable HTTP surface instead of A2A JSON or WebSocket control frames.
 app.include_router(artifact_relay_router)
+# Optional multi-Agent group chat. Always mounted; every route returns a
+# structured 404 unless A2X_GROUPCHAT_ENABLED=true.
+app.include_router(groupchat_router)

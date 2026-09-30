@@ -29,6 +29,11 @@ def _serve(argv):
     parser.add_argument("--port", type=int, default=8000, help="Port (default: 8000)")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host (default: 127.0.0.1)")
     parser.add_argument("--reload", action="store_true", default=False, help="Enable auto-reload")
+    parser.add_argument(
+        "--log-config",
+        default=None,
+        help="Path to a logging config file (see uvicorn --log-config)",
+    )
     args = parser.parse_args(argv)
 
     print(f"\n  Agent Registry Relay")
@@ -41,6 +46,7 @@ def _serve(argv):
         host=args.host,
         port=args.port,
         reload=args.reload,
+        log_config=args.log_config,
     )
 
 

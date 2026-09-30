@@ -78,6 +78,7 @@ class CreatePrincipalRequest(BaseModel):
     # None is only valid for role=admin; provider/user must pass a list (may be empty).
     namespaces: Optional[List[str]] = None
     note: str = ""
+    kind: str = "human"                  # "human" | "agent"
 
 
 class UpdatePrincipalRequest(BaseModel):
@@ -85,6 +86,7 @@ class UpdatePrincipalRequest(BaseModel):
     role: Optional[str] = None
     disabled: Optional[bool] = None
     note: Optional[str] = None
+    kind: Optional[str] = None
 
 
 class CreateKeyRequest(BaseModel):
@@ -107,6 +109,7 @@ async def whoami(ctx: AuthContext = Depends(require_principal)):
         "principal_id": principal.id,
         "handle": principal.handle,
         "role": principal.role,
+        "kind": principal.kind,
         "namespaces": principal.namespaces,
         "disabled": principal.is_disabled,
     }
@@ -154,6 +157,7 @@ async def create_principal(
             namespaces=req.namespaces,
             note=req.note,
             by=ctx.principal_id,
+            kind=req.kind,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
@@ -164,6 +168,7 @@ async def create_principal(
         "principal_id": principal.id,
         "handle": principal.handle,
         "role": principal.role,
+        "kind": principal.kind,
         "namespaces": principal.namespaces,
         "key_id": key.key_id if key else None,
         "key_prefix": key.key_prefix if key else None,
@@ -211,6 +216,8 @@ async def update_principal(
         kwargs["disabled"] = req.disabled
     if req.note is not None:
         kwargs["note"] = req.note
+    if req.kind is not None:
+        kwargs["kind"] = req.kind
     try:
         updated = store.update_principal(principal_id, **kwargs)
     except KeyError as exc:

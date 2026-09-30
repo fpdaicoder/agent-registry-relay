@@ -53,6 +53,10 @@ Relay 拒绝非 JSON body、超限 body、非 A2A 目标、不健康目标、不
 
 Tunnel 的 Registry 状态接口是 `/api/tunnel/status`；WebSocket listener 默认位于独立端口 `8001`。未启用时状态接口返回结构化 404。
 
+## TCP Tunnel
+
+反向 TCP 端口转发（frp 风格）。Registry 状态接口是 `/api/tcp-tunnel/status`；控制/数据 listener 默认位于独立端口 `8003`，代理端口从 `10000-11000` 分配（`public_port=0` 自动分配，显式指定冲突即拒绝）。协议为 JSON 行：设备首帧 `register`（含 `targets` 列表，可选 `dataset/service_id/agent_card` 绑定注册中心），代理端口 accept 后向设备下发 `open`，设备另建数据连接首帧 `connect`，此后为原始双向字节流。未启用时状态接口返回 `enabled=false`。转发明文字节流，生产环境应置于加密通道之后。
+
 ## Artifact Relay
 
 前缀 `/api/artifact-relay`：
