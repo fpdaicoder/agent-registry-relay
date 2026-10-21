@@ -28,6 +28,11 @@ from a2x_registry.groupchat.deps import (
     startup_groupchat,
     shutdown_groupchat,
 )
+from a2x_registry.tasks.router import router as tasks_router
+from a2x_registry.tasks.deps import (
+    startup_tasks,
+    shutdown_tasks,
+)
 
 
 @asynccontextmanager
@@ -39,10 +44,12 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     await startup_tcp_tunnel()
     await startup_artifact_relay()
     await startup_groupchat()
+    await startup_tasks()
 
     try:
         yield
     finally:
+        await shutdown_tasks()
         await shutdown_groupchat()
         await shutdown_artifact_relay()
         await shutdown_tcp_tunnel()
@@ -92,3 +99,6 @@ app.include_router(artifact_relay_router)
 # Optional multi-Agent group chat. Always mounted; every route returns a
 # structured 404 unless A2X_GROUPCHAT_ENABLED=true.
 app.include_router(groupchat_router)
+# Optional personal task-continuation. Always mounted; every route returns a
+# structured 404 unless A2X_TASKS_ENABLED=true.
+app.include_router(tasks_router)

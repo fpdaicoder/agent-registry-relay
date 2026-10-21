@@ -301,7 +301,17 @@ class AuthStore:
         # unused → recommend revoke" audits later.
         with self._lock:
             key.last_used_at = _utcnow_iso()
-        return principal.to_context()
+        # ``key_id`` is the device tag: a principal may hold many keys (one per
+        # device), and the tasks module tells them apart by the key that was
+        # presented. ``Principal.to_context`` cannot fill it (a principal is
+        # not a device), so it is threaded in here, one level above.
+        ctx = principal.to_context()
+        return AuthContext(
+            principal_id=ctx.principal_id,
+            role=ctx.role,
+            namespaces=ctx.namespaces,
+            key_id=key.key_id,
+        )
 
     # ── principal CRUD ──────────────────────────────────────────────────
 

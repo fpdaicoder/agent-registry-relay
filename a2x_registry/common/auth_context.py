@@ -31,11 +31,18 @@ class AuthContext:
             ``None`` means "all namespaces" — only legal for ``role=="admin"``.
             The service layer trusts this; the FastAPI dependency validates
             namespace membership before constructing the context.
+        key_id: The id of the API key that authenticated this request, or
+            ``None`` when the context was built without a key (anonymous /
+            system / no-key paths). The tasks module uses it as the device
+            tag: "which device is acting" == "which key did it present".
+            Populated by ``AuthStore.authenticate``; ``Principal.to_context``
+            leaves it ``None`` because a principal alone has no device.
     """
 
     principal_id: str
     role: str
     namespaces: Optional[FrozenSet[str]] = None
+    key_id: Optional[str] = None
 
     @property
     def is_admin(self) -> bool:
