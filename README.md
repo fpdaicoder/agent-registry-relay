@@ -5,7 +5,7 @@
 - 注册中心控制面：namespace、服务注册/注销/更新/发现、鉴权、心跳、预约锁和集群同步。
 - Relay 数据面：A2A 请求转发、WebSocket Tunnel、Artifact Relay 和独立 Stream Proxy。
 
-本仓库不包含 A2X 搜索、分类树构建、向量检索、Traditional 评估、LLM Provider 或演示 UI。
+A2X 搜索、分类树构建、向量检索、Traditional 评估、LLM Provider 和演示 UI 放在同一进程里，默认不参与注册和中转。未配置 `llm_apikey.json` 或未安装 `[vector]` 时，这些接口返回 503，注册中心、Relay、群聊和任务照常启动。
 
 ## 组件
 
@@ -129,6 +129,15 @@ agent-registry
 
 Tunnel 默认监听 `8001`。Relay 优先使用已绑定的 Tunnel 连接，否则回退到注册卡中的 HTTP 目标。
 
+只开放一个 HTTP 端口时，把隧道挂到同一进程的路径上，不再监听 `8001`：
+
+```bash
+export A2X_TUNNEL_EMBEDDED=true
+export A2X_TUNNEL_HTTP_PATH=/tunnel
+```
+
+客户端连接 `ws://<registry-host>:<http-port>/tunnel`。
+
 ### TCP Tunnel
 
 反向 TCP 端口转发（frp 风格）：端侧设备主动连出到 Registry 注册本地端口目标，Registry 在公网侧监听代理端口，客户端连上后 TCP 字节流被原样桥接到设备本地服务。可承载 SSH、数据库、gRPC 等任意 TCP 协议。
@@ -192,6 +201,17 @@ agent-registry
 
 接口边界与完整设计见 [`docs/groupchat_design.md`](docs/groupchat_design.md)，
 环境变量模板见 [`deploy/agentregistry-groupchat.env.example`](deploy/agentregistry-groupchat.env.example)。
+
+## 可选 A2X 搜索
+
+搜索和注册中心共用数据集目录，不替换注册、鉴权、Relay、隧道、群聊或任务。
+
+- `POST /api/search`：`a2x_get_all` 和 `traditional` 需要 `~/.a2x_registry/llm_apikey.json`（或 `A2X_REGISTRY_HOME` 下的同名文件）。`vector` 还需要 `pip install '.[vector]'`。
+- `POST /api/datasets/{dataset}/build`：为该数据集构建分类树。
+- `GET /api/providers`：查看已配置的 LLM provider。
+- 演示页面只在设置 `A2X_FRONTEND_DIST_DIR` 后挂到 `/`。
+
+缺配置或未安装可选依赖时返回 503，进程继续提供其余接口。
 
 ## 部署与安全
 

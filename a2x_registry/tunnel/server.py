@@ -73,6 +73,12 @@ class WebSocketTunnelServer:
     async def start(self) -> None:
         if self._server is not None:
             return
+        if self.config.embedded:
+            logger.info(
+                "WebSocket tunnel attached at %s on the registry HTTP port",
+                self.config.http_path,
+            )
+            return
         self._server = await websockets.serve(
             self.handle_connection,
             self.config.host,
@@ -117,7 +123,9 @@ class WebSocketTunnelServer:
         return {
             "enabled": True,
             "host": self.config.host,
-            "port": self.bound_port,
+            "port": None if self.config.embedded else self.bound_port,
+            "embedded": self.config.embedded,
+            "http_path": self.config.http_path,
             "connected_devices": self.connected_devices,
             "bound_services": self.bound_services,
             "pending_requests": self.pending_requests,
