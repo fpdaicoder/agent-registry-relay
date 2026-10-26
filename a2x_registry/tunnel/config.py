@@ -45,6 +45,8 @@ class TunnelConfig:
     max_devices: int = 1000
     max_pending_requests: int = 10000
     shared_token: str = ""
+    embedded: bool = False
+    http_path: str = "/tunnel"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "TunnelConfig":
@@ -96,6 +98,11 @@ class TunnelConfig:
                 "A2X_TUNNEL_MAX_PENDING_REQUESTS",
             ),
             shared_token=source.get("A2X_TUNNEL_SHARED_TOKEN", ""),
+            embedded=_as_bool(
+                source.get("A2X_TUNNEL_EMBEDDED", "false"),
+                "A2X_TUNNEL_EMBEDDED",
+            ),
+            http_path=source.get("A2X_TUNNEL_HTTP_PATH", "/tunnel").strip() or "/tunnel",
         )
         config.validate()
         return config

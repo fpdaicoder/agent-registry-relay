@@ -47,6 +47,7 @@ def _serve(argv):
         port=args.port,
         reload=args.reload,
         log_config=args.log_config,
+        ws_max_size=50 * 1024 * 1024,
     )
 
 

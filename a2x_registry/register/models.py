@@ -1,5 +1,6 @@
 """Data models for the registration module."""
 
+from enum import Enum
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -151,3 +152,44 @@ class RegistryStatus(BaseModel):
     total_services: int
     by_source: dict  # {"user_config": N, "api_config": N, "ephemeral": N}
     datasets: List[str]
+
+
+class TaxonomyState(str, Enum):
+    """State of the optional A2X taxonomy for a dataset.
+
+    Registry CRUD does not write this. Search computes it from the dataset
+    files when a query asks for A2X navigation.
+    """
+
+    NONEXISTENT = "nonexistent"
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+    STALE = "stale"
+
+
+class BuildRequest(BaseModel):
+    """Parameters for an optional A2X taxonomy build."""
+
+    resume: str = "no"  # "no" | "yes" | "keyword"
+    generic_ratio: Optional[float] = None
+    delete_threshold: Optional[int] = None
+    max_service_size: Optional[int] = None
+    max_categories_size: Optional[int] = None
+    max_depth: Optional[int] = None
+    min_leaf_size: Optional[int] = None
+    keyword_batch_size: Optional[int] = None
+    max_keywords_per_service: Optional[int] = None
+    keyword_threshold: Optional[int] = None
+    classification_retries: Optional[int] = None
+    max_refine_iterations: Optional[int] = None
+    temperature_keywords: Optional[float] = None
+    temperature_design: Optional[float] = None
+    temperature_classify: Optional[float] = None
+    max_tokens_design: Optional[int] = None
+    max_tokens_design_small: Optional[int] = None
+    max_tokens_classify: Optional[int] = None
+    max_tokens_validate: Optional[int] = None
+    max_tokens_keywords: Optional[int] = None
+    enable_cross_domain: Optional[bool] = None
+    workers: Optional[int] = None
+    log_level: Optional[str] = None

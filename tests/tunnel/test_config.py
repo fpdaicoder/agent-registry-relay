@@ -12,6 +12,8 @@ def test_tunnel_disabled_by_default():
     assert config.request_timeout_seconds == 300
     assert config.max_message_bytes == 50 * 1024 * 1024
     assert config.shared_token == ""
+    assert config.embedded is False
+    assert config.http_path == "/tunnel"
 
 
 def test_tunnel_reads_environment():
@@ -23,6 +25,8 @@ def test_tunnel_reads_environment():
             "A2X_TUNNEL_PORT": "9001",
             "A2X_TUNNEL_MAX_DEVICES": "12",
             "A2X_TUNNEL_SHARED_TOKEN": "secret",
+            "A2X_TUNNEL_EMBEDDED": "true",
+            "A2X_TUNNEL_HTTP_PATH": "/tunnel",
         }
     )
 
@@ -32,6 +36,8 @@ def test_tunnel_reads_environment():
     assert config.port == 9001
     assert config.max_devices == 12
     assert config.shared_token == "secret"
+    assert config.embedded is True
+    assert config.http_path == "/tunnel"
 
 
 def test_default_timeout_cannot_exceed_maximum():

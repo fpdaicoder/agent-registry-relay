@@ -30,6 +30,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# A2X vector search only. Registry, relay, tunnel, group chat, and tasks
+# install and start without this extra.
+vector = [
+    "numpy>=1.23",
+    "sentence-transformers>=2.2",
+    "chromadb>=0.4",
+]
+evaluation = ["tqdm>=4.64"]
+full = ["agent-registry-relay[vector,evaluation]"]
 dev = ["build>=1.0", "twine>=5.0", "pytest>=7.0"]
 
 [project.urls]
@@ -44,6 +53,10 @@ agent-stream-proxy = "a2x_registry.stream_proxy.__main__:main"
 # Compatibility aliases retained for existing deployments.
 a2x-registry = "a2x_registry.backend.__main__:main"
 a2x-register = "a2x_registry.register.__main__:main"
+a2x-build = "a2x_registry.a2x.build.__main__:main"
+a2x-evaluate-a2x = "a2x_registry.a2x.evaluation.__main__:main"
+a2x-evaluate-vector = "a2x_registry.vector.evaluation.__main__:main"
+a2x-evaluate-traditional = "a2x_registry.traditional.evaluation.__main__:main"
 
 [tool.setuptools.dynamic]
 version = { attr = "a2x_registry.__version__" }

@@ -52,6 +52,21 @@ def dataset_dir(dataset: str) -> Path:
     return database_dir() / dataset
 
 
+def llm_apikey_path() -> Path:
+    """Return the resolved ``llm_apikey.json`` path.
+
+    Priority:
+      1. ``<A2X_REGISTRY_HOME>/llm_apikey.json`` when the env var is set
+      2. ``~/.a2x_registry/llm_apikey.json``
+
+    Credentials stay out of the source tree. A2X search reads this file;
+    registry and relay startup do not.
+    """
+    env = _env_home()
+    base = env if env else DEFAULT_USER_HOME
+    return base / "llm_apikey.json"
+
+
 def reset_cache() -> None:
     """Clear the cached home lookup. Tests call this after mutating ``A2X_REGISTRY_HOME``."""
     get_home.cache_clear()
